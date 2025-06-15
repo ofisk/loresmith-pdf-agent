@@ -747,7 +747,14 @@ export default {
   // Authentication check
   async checkAuthentication(req, env, adminRequired = false) {
     const authHeader = req.headers.get("Authorization");
+    
+    // Log authentication attempt
+    console.log("=== PDF AGENT AUTH DEBUG ===");
+    console.log("Auth header:", authHeader ? `${authHeader.substring(0, 20)}...` : "MISSING");
+    console.log("Admin required:", adminRequired);
+    
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("AUTH FAIL: Missing or invalid Authorization header");
       return { success: false, error: "Missing or invalid Authorization header" };
     }
 
@@ -756,22 +763,35 @@ export default {
     // Check against API keys
     const validApiKey = env.API_KEY;
     const validAdminKey = env.ADMIN_API_KEY;
+    
+    // Log expected keys (first 8 chars only for security)
+    console.log("Expected API_KEY:", validApiKey ? `${validApiKey.substring(0, 8)}...` : "NOT SET");
+    console.log("Expected ADMIN_API_KEY:", validAdminKey ? `${validAdminKey.substring(0, 8)}...` : "NOT SET");
+    console.log("Received token:", token ? `${token.substring(0, 8)}...` : "EMPTY");
 
     if (adminRequired) {
+      console.log("Checking admin key...");
       if (token === validAdminKey) {
+        console.log("AUTH SUCCESS: Admin key matched");
         return { success: true, clientId: "admin", isAdmin: true };
       }
+      console.log("AUTH FAIL: Admin key required but not matched");
       return { success: false, error: "Admin authentication required" };
     }
 
+    console.log("Checking regular API key...");
     if (token === validApiKey || token === validAdminKey) {
+      const isAdmin = token === validAdminKey;
+      console.log(`AUTH SUCCESS: ${isAdmin ? 'Admin' : 'User'} key matched`);
       return { 
         success: true, 
-        clientId: token === validAdminKey ? "admin" : "user",
-        isAdmin: token === validAdminKey
+        clientId: isAdmin ? "admin" : "user",
+        isAdmin: isAdmin
       };
     }
 
+    console.log("AUTH FAIL: No key matched");
+    console.log("=== END AUTH DEBUG ===");
     return { success: false, error: "Invalid API key" };
   },
 
