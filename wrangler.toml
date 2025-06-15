@@ -11,7 +11,6 @@ compatibility_date = "2025-06-14"
 [vars]
 RATE_LIMIT_UPLOADS_PER_HOUR = "10"
 RATE_LIMIT_UPLOADS_PER_DAY = "50"
-API_KEY = ""
 
 [[r2_buckets]]
 binding = "loresmith_pdfs"

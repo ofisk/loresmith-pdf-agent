@@ -669,7 +669,7 @@ export default {
   // Handler for DELETE /pdf/{id}
   async handleDeletePdf(req, env, pathname) {
     // Check admin authentication
-    const authResponse = await this.requireAuthentication(req, env, true);
+    const authResponse = await this.requireAuthentication(req, env);
     if (authResponse.error) return authResponse.error;
 
     const pdfId = pathname.split("/")[2];
