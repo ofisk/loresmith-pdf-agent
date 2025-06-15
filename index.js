@@ -174,7 +174,7 @@ export default {
   // Handler for /upload/request
   async handleUploadRequest(req, env) {
     // Check authentication
-    const authResponse = await this.requireAuthentication(req, env);
+    const authResponse = await this.requireAuthentication(req, env, true);
     if (authResponse.error) return authResponse.error;
     const authResult = authResponse.success;
 
