@@ -248,7 +248,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             formData.append('file', file);
             if (name) formData.append('name', name);
             if (tags) formData.append('tags', tags);
-            const response = await fetch('/upload', {
+            const response = await fetch('./upload', {
                 method: 'POST',
                 headers: { 'Authorization': \`Bearer \${apiKey}\` },
                 body: formData
@@ -266,7 +266,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
         async function uploadLargeFile(file, name, tags) {
             showStatus('info', 'Requesting upload URL...');
             showProgress(10);
-            const requestResponse = await fetch('/upload/request', {
+            const requestResponse = await fetch('./upload/request', {
                 method: 'POST',
                 headers: { 'Authorization': \`Bearer \${apiKey}\`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: file.name, size: file.size, name: name, tags: tags })
@@ -287,7 +287,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             }
             showStatus('info', 'Finalizing upload...');
             showProgress(90);
-            const completeResponse = await fetch('/upload/complete', {
+            const completeResponse = await fetch('./upload/complete', {
                 method: 'POST',
                 headers: { 'Authorization': \`Bearer \${apiKey}\`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ upload_id: requestResult.upload_id, etag: uploadResponse.headers.get('etag') })
@@ -306,7 +306,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             const currentApiKey = document.getElementById('apiKey').value.trim();
             if (!currentApiKey) return;
             try {
-                const response = await fetch('/pdfs', {
+                const response = await fetch('./pdfs', {
                     headers: { 'Authorization': \`Bearer \${currentApiKey}\` }
                 });
                 const result = await response.json();
@@ -380,7 +380,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             try {
                 showStatus('info', 'Deleting PDF...');
                 
-                const response = await fetch(\`/pdf/\${pdfId}\`, {
+                const response = await fetch(\`./pdf/\${pdfId}\`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': \`Bearer \${currentApiKey}\`
@@ -417,7 +417,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
              modal.style.display = 'block';
              
              try {
-                 const response = await fetch(\`/pdf/\${pdfId}/metadata\`, {
+                 const response = await fetch(\`./pdf/\${pdfId}/metadata\`, {
                      headers: {
                          'Authorization': \`Bearer \${currentApiKey}\`
                      }
@@ -513,7 +513,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
               try {
                   showStatus('info', 'Preparing download...');
                   
-                  const response = await fetch(\`/pdf/\${pdfId}\`, {
+                  const response = await fetch(\`./pdf/\${pdfId}\`, {
                       headers: {
                           'Authorization': \`Bearer \${currentApiKey}\`
                       }
@@ -565,7 +565,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
               try {
                   showStatus('info', 'Fetching raw metadata...');
                   
-                  const response = await fetch(\`/pdf/\${pdfId}/metadata\`, {
+                  const response = await fetch(\`./pdf/\${pdfId}/metadata\`, {
                       headers: {
                           'Authorization': \`Bearer \${currentApiKey}\`
                       }
