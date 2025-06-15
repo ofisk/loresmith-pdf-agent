@@ -93,7 +93,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
                 <div class="upload-icon">📄</div>
                 <h3 class="upload-text">Drag & Drop your PDF here</h3>
                 <p class="upload-subtext">or click to browse files</p>
-                <button class="btn" onclick="document.getElementById('fileInput').click()">Choose PDF File</button>
+                <button class="btn" id="chooseFileBtn">Choose PDF File</button>
                 <input type="file" id="fileInput" class="file-input" accept=".pdf" />
             </div>
             <div class="input-group">
@@ -107,6 +107,7 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             <div class="file-info" id="fileInfo">
                 <h4>📋 File Information</h4>
                 <div class="file-details" id="fileDetails"></div>
+                <button class="btn" id="uploadBtn" style="margin-top: 15px; display: none;">Upload PDF</button>
             </div>
             <div class="progress-bar" id="progressBar">
                 <div class="progress-fill" id="progressFill"></div>
@@ -147,6 +148,8 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             const uploadArea = document.getElementById('uploadArea');
             const fileInput = document.getElementById('fileInput');
             const apiKeyInput = document.getElementById('apiKey');
+            const chooseFileBtn = document.getElementById('chooseFileBtn');
+            const uploadBtn = document.getElementById('uploadBtn');
             
             apiKeyInput.addEventListener('change', function() {
                 apiKey = this.value;
@@ -154,6 +157,13 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
                 if (apiKey) loadPDFs();
             });
             
+            // Choose file button click
+            chooseFileBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                fileInput.click();
+            });
+            
+            // Upload area drag and drop
             uploadArea.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 uploadArea.classList.add('dragover');
@@ -169,22 +179,35 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
                 uploadArea.classList.remove('dragover');
                 const files = e.dataTransfer.files;
                 if (files.length > 0) {
-                    handleFile(files[0]);
+                    handleFileSelection(files[0]);
                 }
             });
             
+            // File input change
             fileInput.addEventListener('change', function(e) {
                 if (e.target.files.length > 0) {
-                    handleFile(e.target.files[0]);
+                    handleFileSelection(e.target.files[0]);
                 }
             });
             
-            uploadArea.addEventListener('click', function() {
-                fileInput.click();
+            // Upload button click
+            uploadBtn.addEventListener('click', function() {
+                if (currentFile) {
+                    uploadFile();
+                }
+            });
+            
+            // Upload area click (only for drag/drop area, not the button)
+            uploadArea.addEventListener('click', function(e) {
+                // Only trigger file picker if clicking on the upload area itself, not the button
+                if (e.target === uploadArea || e.target.classList.contains('upload-icon') || 
+                    e.target.classList.contains('upload-text') || e.target.classList.contains('upload-subtext')) {
+                    fileInput.click();
+                }
             });
         }
         
-        function handleFile(file) {
+        function handleFileSelection(file) {
             if (file.type !== 'application/pdf') {
                 showStatus('error', 'Please select a PDF file');
                 return;
@@ -195,7 +218,9 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             }
             currentFile = file;
             showFileInfo(file);
-            setTimeout(uploadFile, 1000);
+            // Show the upload button
+            document.getElementById('uploadBtn').style.display = 'inline-block';
+            showStatus('info', 'File selected. Click "Upload PDF" to start upload.');
         }
         
         function showFileInfo(file) {
@@ -218,6 +243,16 @@ export const UPLOAD_UI_HTML = `<!DOCTYPE html>
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function clearForm() {
+            currentFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('pdfName').value = '';
+            document.getElementById('pdfTags').value = '';
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('uploadBtn').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
         }
         
         async function uploadFile() {
