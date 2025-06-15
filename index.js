@@ -539,22 +539,48 @@ export default {
     if (authResponse.error) return authResponse.error;
 
     try {
-      const { keys } = await env.PDF_METADATA.list({ prefix: "pdf:" });
+      // Check if PDF_METADATA binding exists
+      if (!env.PDF_METADATA) {
+        console.log("PDF_METADATA KV binding not found - returning empty list");
+        return new Response(JSON.stringify({
+          pdfs: [],
+          count: 0,
+          message: "PDF storage is not configured yet. No PDFs available."
+        }), {
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
+      }
+
+      const listResult = await env.PDF_METADATA.list({ prefix: "pdf:" });
+      const keys = listResult?.keys || [];
       const pdfs = [];
 
+      console.log(`Found ${keys.length} PDF metadata entries`);
+
       for (const key of keys) {
-        const metadata = await env.PDF_METADATA.get(key.name);
-        if (metadata) {
-          const pdfData = JSON.parse(metadata);
-          // Remove sensitive info for listing
-          delete pdfData.uploadedBy;
-          pdfs.push(pdfData);
+        try {
+          const metadata = await env.PDF_METADATA.get(key.name);
+          if (metadata) {
+            const pdfData = JSON.parse(metadata);
+            // Remove sensitive info for listing
+            delete pdfData.uploadedBy;
+            pdfs.push(pdfData);
+          }
+        } catch (parseError) {
+          console.log(`Failed to parse metadata for ${key.name}:`, parseError.message);
+          // Continue with other PDFs instead of failing completely
         }
       }
 
+      const message = pdfs.length === 0 ? "Your PDF library is currently empty. Upload some PDFs to get started!" : undefined;
+
       return new Response(JSON.stringify({
         pdfs: pdfs,
-        count: pdfs.length
+        count: pdfs.length,
+        ...(message && { message })
       }), {
         headers: { 
           "Content-Type": "application/json",
@@ -563,11 +589,16 @@ export default {
       });
 
     } catch (error) {
+      console.log("PDF listing error:", error.message);
+      
+      // Return a graceful empty response instead of an error
       return new Response(JSON.stringify({
-        error: "Failed to list PDFs",
-        details: error.message
+        pdfs: [],
+        count: 0,
+        message: "Unable to load PDF library at this time. This might be a configuration issue.",
+        debug: error.message
       }), { 
-        status: 500,
+        status: 200, // Changed from 500 to 200 to be more tolerant
         headers: { 
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*"
