@@ -762,11 +762,11 @@ export default {
     
     // Check against API keys
     const validApiKey = env.API_KEY;
-    const validAdminKey = env.ADMIN_API_KEY;
+    const validAdminKey = env.ADMIN_KEY;
     
     // Log expected keys (first 8 chars only for security)
     console.log("Expected API_KEY:", validApiKey ? `${validApiKey.substring(0, 8)}...` : "NOT SET");
-    console.log("Expected ADMIN_API_KEY:", validAdminKey ? `${validAdminKey.substring(0, 8)}...` : "NOT SET");
+    console.log("Expected ADMIN_KEY:", validAdminKey ? `${validAdminKey.substring(0, 8)}...` : "NOT SET");
     console.log("Received token:", token ? `${token.substring(0, 8)}...` : "EMPTY");
 
     if (adminRequired) {

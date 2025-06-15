@@ -51,12 +51,12 @@ Set your API keys as secrets (these won't be visible in your code):
 wrangler secret put API_KEY
 
 # Set the admin API key for delete operations  
-wrangler secret put ADMIN_API_KEY
+wrangler secret put ADMIN_KEY
 ```
 
 When prompted, enter strong, unique keys like:
 - API_KEY: `lore_upload_abc123def456ghi789jkl012`
-- ADMIN_API_KEY: `lore_admin_xyz789uvw456rst123opq890`
+- ADMIN_KEY: `lore_admin_xyz789uvw456rst123opq890`
 
 ### 4. Update Configuration
 
@@ -84,23 +84,23 @@ wrangler deploy
 
 #### 🔒 **All Endpoints Require Authentication**
 - **POST** `/upload` - Upload a PDF file
-  - **Authentication**: Required (API_KEY or ADMIN_API_KEY)
+  - **Authentication**: Required (API_KEY or ADMIN_KEY)
   - Content-Type: `multipart/form-data`
   - Fields: `file` (required), `name` (optional), `tags` (optional)
   - Rate Limits: 10/hour, 50/day (configurable)
   - File Size: Up to 50MB per PDF
   
 - **GET** `/pdfs` - List all stored PDFs
-  - **Authentication**: Required (API_KEY or ADMIN_API_KEY)
+  - **Authentication**: Required (API_KEY or ADMIN_KEY)
   
 - **GET** `/pdf/{id}` - Download a specific PDF
-  - **Authentication**: Required (API_KEY or ADMIN_API_KEY)
+  - **Authentication**: Required (API_KEY or ADMIN_KEY)
   
 - **GET** `/pdf/{id}/metadata` - Get PDF metadata and text preview
-  - **Authentication**: Required (API_KEY or ADMIN_API_KEY)
+  - **Authentication**: Required (API_KEY or ADMIN_KEY)
   
 - **DELETE** `/pdf/{id}` - Delete a PDF
-  - **Authentication**: Required (ADMIN_API_KEY only)
+  - **Authentication**: Required (ADMIN_KEY only)
 
 ## Usage Examples
 
