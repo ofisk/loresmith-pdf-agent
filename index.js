@@ -9,6 +9,16 @@ export default {
       return this.handleAgentCard();
     }
 
+    // Serve the upload UI for root path
+    if (pathname === "/" || pathname === "/ui") {
+      return new Response(this.getUploadUI(), {
+        headers: { 
+          "Content-Type": "text/html",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
+
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
       return this.handleCorsOptions();
