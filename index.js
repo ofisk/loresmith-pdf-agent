@@ -17,6 +17,11 @@ export default {
       return this.handleAuthScript();
     }
 
+    // Handler for API key validation - REQUIRES AUTHENTICATION
+    if (pathname === "/validate-key" && req.method === "POST") {
+      return this.handleValidateApiKey(req, env);
+    }
+
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
       return this.handleCorsOptions();
@@ -160,24 +165,34 @@ class PdfAgentAuth {
     this.setLoading(form, true);
     
     try {
-      // Test the API key by trying to fetch PDFs
-      const response = await fetch(this.baseUrl + '/pdfs', {
-        headers: { 'Authorization': 'Bearer ' + apiKey }
+      // Test the API key using the validation endpoint
+      const response = await fetch(this.baseUrl + '/validate-key', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ apiKey: apiKey })
       });
       
       if (response.ok) {
-        this.apiKey = apiKey;
-        localStorage.setItem(this.storageKey, apiKey);
-        this.authenticated = true;
-        this.updateUIState();
-        this.showMessage('success', 'Successfully connected! Your API key has been securely stored.');
-        
-        // Load initial data
-        setTimeout(() => {
-          this.loadInitialData();
-        }, 500);
+        const data = await response.json();
+        if (data.success) {
+          this.apiKey = apiKey;
+          localStorage.setItem(this.storageKey, apiKey);
+          this.authenticated = true;
+          this.updateUIState();
+          this.showMessage('success', 'Successfully connected! Your API key has been securely stored.');
+          
+          // Load initial data
+          setTimeout(() => {
+            this.loadInitialData();
+          }, 500);
+        } else {
+          throw new Error(data.error || 'API key validation failed');
+        }
       } else {
-        throw new Error('Invalid API key or authentication failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Invalid API key or authentication failed');
       }
     } catch (error) {
       this.showMessage('error', error.message);
@@ -284,10 +299,19 @@ class PdfAgentAuth {
     if (!this.apiKey) return false;
     
     try {
-      const response = await fetch(this.baseUrl + '/pdfs', {
-        headers: { 'Authorization': 'Bearer ' + this.apiKey }
+      const response = await fetch(this.baseUrl + '/validate-key', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ apiKey: this.apiKey })
       });
-      return response.ok;
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.success;
+      }
+      return false;
     } catch (error) {
       console.warn('API key validation failed:', error);
       return false;
@@ -539,6 +563,16 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         "endpoints": [
           {
+            "path": "/validate-key",
+            "method": "POST",
+            "description": "Validate an API key without performing any operations",
+            "accepts": "application/json",
+            "authentication": "none",
+            "parameters": {
+              "apiKey": "The API key to validate"
+            }
+          },
+          {
             "path": "/upload/request",
             "method": "POST",
             "description": "Request a presigned upload URL for large PDFs",
@@ -606,6 +640,64 @@ document.addEventListener('DOMContentLoaded', () => {
         "Access-Control-Allow-Origin": "*"
       }
     });
+  },
+
+  // Handler for API key validation
+  async handleValidateApiKey(req, env) {
+    try {
+      const body = await req.json();
+      const { apiKey } = body;
+
+      if (!apiKey) {
+        return new Response(JSON.stringify({
+          error: "API key is required"
+        }), { 
+          status: 400,
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
+      }
+
+      // Test the API key by trying to authenticate with it
+      const authResult = await this.checkAuthentication(req, env, false, apiKey);
+      
+      if (authResult.success) {
+        return new Response(JSON.stringify({
+          success: true,
+          message: "API key is valid",
+          clientId: authResult.success.clientId
+        }), {
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
+      } else {
+        return new Response(JSON.stringify({
+          error: "Invalid API key"
+        }), { 
+          status: 401,
+          headers: { 
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          }
+        });
+      }
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: "Failed to validate API key",
+        details: error.message
+      }), { 
+        status: 500,
+        headers: { 
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
   },
 
   // Handler for CORS preflight requests
@@ -1187,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Default handler
   async handleDefault() {
-    return new Response("LoreSmith PDF Storage Agent Ready\n\nEndpoints:\n- GET /.well-known/agent.json - Agent capabilities\n- POST /upload/request - Request presigned upload URL (up to 200MB)\n- POST /upload/complete - Complete presigned upload\n- POST /upload - Upload PDF directly (<95MB)\n- GET /pdfs - List PDFs (AUTH REQUIRED)\n- GET /pdf/{id} - Download PDF (AUTH REQUIRED)\n- GET /pdf/{id}/metadata - Get PDF metadata (AUTH REQUIRED)\n- DELETE /pdf/{id} - Delete PDF (ADMIN AUTH REQUIRED)\n\nAuthentication: Bearer token in Authorization header", {
+    return new Response("LoreSmith PDF Storage Agent Ready\n\nEndpoints:\n- GET /.well-known/agent.json - Agent capabilities\n- POST /validate-key - Validate API key\n- POST /upload/request - Request presigned upload URL (up to 200MB)\n- POST /upload/complete - Complete presigned upload\n- POST /upload - Upload PDF directly (<95MB)\n- GET /pdfs - List PDFs (AUTH REQUIRED)\n- GET /pdf/{id} - Download PDF (AUTH REQUIRED)\n- GET /pdf/{id}/metadata - Get PDF metadata (AUTH REQUIRED)\n- DELETE /pdf/{id} - Delete PDF (ADMIN AUTH REQUIRED)\n\nAuthentication: Bearer token in Authorization header", {
       headers: { 
         "Content-Type": "text/plain",
         "Access-Control-Allow-Origin": "*"
@@ -1224,20 +1316,28 @@ document.addEventListener('DOMContentLoaded', () => {
   },
 
   // Authentication check
-  async checkAuthentication(req, env, adminRequired = false) {
-    const authHeader = req.headers.get("Authorization");
+  async checkAuthentication(req, env, adminRequired = false, providedApiKey = null) {
+    let token;
     
-    // Log authentication attempt
-    console.log("=== PDF AGENT AUTH DEBUG ===");
-    console.log("Auth header:", authHeader ? `${authHeader.substring(0, 20)}...` : "MISSING");
-    console.log("Admin required:", adminRequired);
-    
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.log("AUTH FAIL: Missing or invalid Authorization header");
-      return { success: false, error: "Missing or invalid Authorization header" };
-    }
+    if (providedApiKey) {
+      // Use the provided API key directly (for validation endpoint)
+      token = providedApiKey;
+    } else {
+      // Extract from Authorization header (normal flow)
+      const authHeader = req.headers.get("Authorization");
+      
+      // Log authentication attempt
+      console.log("=== PDF AGENT AUTH DEBUG ===");
+      console.log("Auth header:", authHeader ? `${authHeader.substring(0, 20)}...` : "MISSING");
+      console.log("Admin required:", adminRequired);
+      
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        console.log("AUTH FAIL: Missing or invalid Authorization header");
+        return { success: false, error: "Missing or invalid Authorization header" };
+      }
 
-    const token = authHeader.slice(7); // Remove "Bearer "
+      token = authHeader.slice(7); // Remove "Bearer "
+    }
     
     // Check against API keys
     const validApiKey = env.API_KEY;
