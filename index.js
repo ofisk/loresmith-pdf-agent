@@ -24,6 +24,11 @@ export default {
       return this.handleUIChunk(req);
     }
 
+    // Serve complete UI for main agent integration
+    if (pathname === "/ui" && req.method === "GET") {
+      return this.handleCompleteUI(req);
+    }
+
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
       return this.handleCorsOptions();
@@ -917,6 +922,437 @@ export default {
   },
 
   // Handle UI chunk requests for main agent integration
+  async handleCompleteUI(req) {
+    const step = new URL(req.url).searchParams.get('step') || '1';
+    
+    // Return complete HTML interface for PDF management
+    const completeUI = `
+      <div class="pdf-agent-ui">
+        <style>
+          .pdf-agent-ui {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: system-ui, -apple-system, sans-serif;
+          }
+          
+          .pdf-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e1e5e9;
+          }
+          
+          .pdf-section h3 {
+            margin: 0 0 16px 0;
+            color: #1a1a1a;
+            font-size: 1.25rem;
+            font-weight: 600;
+          }
+          
+          .pdf-input-group {
+            margin-bottom: 16px;
+          }
+          
+          .pdf-input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #374151;
+          }
+          
+          .pdf-input-group input, .pdf-input-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+          }
+          
+          .pdf-input-group input:focus, .pdf-input-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
+          
+          .pdf-input-group small {
+            display: block;
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 12px;
+          }
+          
+          .pdf-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+          }
+          
+          .pdf-btn:hover {
+            background: #2563eb;
+          }
+          
+          .pdf-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+          }
+          
+          .pdf-btn-secondary {
+            background: #6b7280;
+          }
+          
+          .pdf-btn-secondary:hover {
+            background: #4b5563;
+          }
+          
+          .pdf-btn-success {
+            background: #10b981;
+          }
+          
+          .pdf-btn-success:hover {
+            background: #059669;
+          }
+          
+          .pdf-btn-danger {
+            background: #ef4444;
+          }
+          
+          .pdf-btn-danger:hover {
+            background: #dc2626;
+          }
+          
+          .pdf-btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+          }
+          
+          .pdf-status {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+            font-size: 14px;
+            display: none;
+          }
+          
+          .pdf-status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+          }
+          
+          .pdf-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+          }
+          
+          .pdf-status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+          }
+          
+          .pdf-progress-container {
+            margin: 16px 0;
+            display: none;
+          }
+          
+          .pdf-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+          }
+          
+          .pdf-progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            width: 0%;
+            transition: width 0.3s ease;
+          }
+          
+          .pdf-progress-text {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #6b7280;
+            text-align: center;
+          }
+          
+          .pdf-file-preview {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+            display: none;
+          }
+          
+          .pdf-file-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+          }
+          
+          .pdf-file-info > div {
+            font-size: 14px;
+          }
+          
+          .pdf-file-info strong {
+            color: #374151;
+          }
+          
+          .pdf-library {
+            margin-top: 24px;
+          }
+          
+          .pdf-library-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+          }
+          
+          .pdf-container {
+            min-height: 100px;
+            padding: 20px;
+            text-align: center;
+            color: #6b7280;
+          }
+          
+          .pdf-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+          }
+          
+          .pdf-item:hover {
+            border-color: #d1d5db;
+          }
+          
+          .pdf-item h4 {
+            margin: 0 0 8px 0;
+            color: #1f2937;
+            font-size: 16px;
+          }
+          
+          .pdf-meta {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 12px;
+          }
+          
+          .pdf-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+          
+          .pdf-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+          }
+          
+          .pdf-modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+          }
+          
+          .pdf-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          
+          .pdf-modal-header h3 {
+            margin: 0;
+            color: #1f2937;
+          }
+          
+          .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+          }
+          
+          .close-modal:hover {
+            background: #f3f4f6;
+            color: #374151;
+          }
+          
+          .pdf-modal-content {
+            padding: 24px;
+          }
+          
+          .pdf-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+          }
+          
+          .pdf-info-grid > div {
+            font-size: 14px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+          }
+          
+          .pdf-text-preview {
+            margin-top: 20px;
+          }
+          
+          .pdf-text-preview h4 {
+            margin: 0 0 12px 0;
+            color: #374151;
+          }
+          
+          .text-preview-content {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+          }
+          
+          .pdf-modal-actions {
+            padding: 20px 24px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+          }
+        </style>
+        
+        <!-- Authentication Section -->
+        <div class="pdf-section" id="pdfApiKeySection">
+          <h3>🔐 Authentication</h3>
+          <div class="pdf-input-group">
+            <label for="pdfApiKey">API Key</label>
+            <input type="password" id="pdfApiKey" placeholder="Enter your API key">
+            <small>Required to access PDF storage and management features</small>
+          </div>
+          <button class="pdf-btn" onclick="validatePdfApiKey()">Connect</button>
+        </div>
+        
+        <!-- Main Content (hidden until authenticated) -->
+        <div id="pdfMainContent" style="display: none;">
+          
+          <!-- Library Section -->
+          <div class="pdf-section">
+            <h3>📚 Your PDF Library</h3>
+            <div class="pdf-library-actions">
+              <button class="pdf-btn pdf-btn-secondary pdf-btn-sm" onclick="refreshPdfs()">Refresh</button>
+              <button class="pdf-btn pdf-btn-secondary pdf-btn-sm" onclick="showApiKeySection()">Change API Key</button>
+            </div>
+            <div id="pdfContainer" class="pdf-container">Loading...</div>
+          </div>
+          
+          <!-- Upload Section -->
+          <div class="pdf-section">
+            <h3>📤 Upload New PDF</h3>
+            <form id="pdfUploadForm" onsubmit="handlePdfUpload(event)">
+              <div class="pdf-input-group">
+                <label for="pdfFileInput">Select PDF File</label>
+                <input type="file" id="pdfFileInput" accept=".pdf" required onchange="handleFileSelection()">
+                <small>Supports PDF files up to 200MB</small>
+              </div>
+              
+              <div id="pdfFilePreview" class="pdf-file-preview">
+                <h4>📄 Selected File</h4>
+                <div id="pdfFileDetails" class="pdf-file-info"></div>
+              </div>
+              
+              <div class="pdf-input-group">
+                <label for="pdfName">Display Name (optional)</label>
+                <input type="text" id="pdfName" placeholder="Custom name for your PDF">
+                <small>Leave blank to use the original filename</small>
+              </div>
+              
+              <div class="pdf-input-group">
+                <label for="pdfTags">Tags (optional)</label>
+                <input type="text" id="pdfTags" placeholder="e.g., campaign, rules, homebrew">
+                <small>Comma-separated tags to help organize your PDFs</small>
+              </div>
+              
+              <div class="pdf-actions">
+                <button type="submit" class="pdf-btn pdf-btn-success" id="pdfUploadBtn" disabled>
+                  <span id="pdfUploadBtnText">Upload PDF</span>
+                </button>
+                <button type="button" class="pdf-btn pdf-btn-secondary" onclick="clearUploadForm()">Clear</button>
+              </div>
+              
+              <div class="pdf-progress-container" id="pdfUploadProgress">
+                <div class="pdf-progress-bar">
+                  <div class="pdf-progress-fill" id="pdfProgressFill"></div>
+                </div>
+                <div class="pdf-progress-text" id="pdfProgressText">Preparing upload...</div>
+              </div>
+              
+              <div id="pdfUploadStatus" class="pdf-status"></div>
+            </form>
+          </div>
+          
+        </div>
+        
+        <div id="pdfStatus" class="pdf-status"></div>
+      </div>
+      
+      <script>
+        ${this.getPdfAgentScripts()}
+      </script>
+    `;
+
+    return new Response(completeUI, {
+      headers: {
+        'Content-Type': 'text/html',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  },
+
   async handleUIChunk(req) {
     const url = new URL(req.url);
     const step = url.searchParams.get('step') || '1';
