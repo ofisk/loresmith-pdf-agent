@@ -56,8 +56,14 @@ export default {
   // Handler for UI schema
   async handleUISchema() {
     try {
+      console.log('Loading UI schema...');
       const schemaModule = await import('./ui/schema.js');
-      return new Response(JSON.stringify(schemaModule.default, null, 2), {
+      console.log('Schema module loaded, agent name:', schemaModule.default?.agent_name);
+      
+      const jsonResponse = JSON.stringify(schemaModule.default, null, 2);
+      console.log('Schema JSON length:', jsonResponse.length);
+      
+      return new Response(jsonResponse, {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -65,7 +71,11 @@ export default {
         }
       });
     } catch (error) {
-      return new Response(JSON.stringify({ error: 'Failed to load UI schema' }), {
+      console.error('Failed to load UI schema:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to load UI schema',
+        details: error.message 
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -79,7 +89,7 @@ export default {
       "name": "LoreSmith PDF Storage Agent",
       "description": "Stores and manages D&D 5e PDFs for campaign planning. Handles large PDF uploads up to 200MB, extracts metadata, and provides retrieval endpoints.",
       "version": "1.0.0",
-      "ui_schema": "/ui/schema.js",
+      "ui_schema": "/ui/schema",
       "capabilities": [
         "pdf-upload",
         "pdf-storage", 
