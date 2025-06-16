@@ -1359,11 +1359,11 @@ export default {
         if (apiKeyInput && pdfApiKey) {
           apiKeyInput.value = pdfApiKey;
           // Auto-validate if we have a stored key
-          setTimeout(validatePdfApiKey, 100);
+          setTimeout(window.validatePdfApiKey, 100);
         }
       }
       
-      async function validatePdfApiKey() {
+      window.validatePdfApiKey = async function() {
         const apiKeyInput = document.getElementById('pdfApiKey');
         pdfApiKey = apiKeyInput.value.trim();
         
@@ -1382,8 +1382,8 @@ export default {
           
           if (response.ok) {
             hideAgentStatus();
-            showMainContent();
-            setTimeout(refreshPdfs, 100);
+            window.showMainContent();
+            setTimeout(window.refreshPdfs, 100);
           } else {
             showAgentStatus('Invalid API key. Please check and try again.', 'error');
           }
@@ -1392,7 +1392,7 @@ export default {
         }
       }
       
-      function showMainContent() {
+      window.showMainContent = function() {
         const apiKeySection = document.getElementById('pdfApiKeySection');
         const mainContent = document.getElementById('pdfMainContent');
         
@@ -1400,7 +1400,7 @@ export default {
         if (mainContent) mainContent.style.display = 'block';
       }
       
-      function showApiKeySection() {
+      window.showApiKeySection = function() {
         const apiKeySection = document.getElementById('pdfApiKeySection');
         const mainContent = document.getElementById('pdfMainContent');
         
@@ -1414,7 +1414,7 @@ export default {
         localStorage.removeItem('loresmith_pdf_api_key');
       }
       
-      async function refreshPdfs() {
+      window.refreshPdfs = async function() {
         const container = document.getElementById('pdfContainer');
         if (!container) return;
         
@@ -1466,7 +1466,7 @@ export default {
         }
       }
       
-      function handleFileSelection() {
+      window.handleFileSelection = function() {
         const fileInput = document.getElementById('pdfFileInput');
         const file = fileInput.files[0];
         const filePreview = document.getElementById('pdfFilePreview');
@@ -1519,7 +1519,7 @@ export default {
         hideAgentStatus();
       }
       
-      function formatFileSize(bytes) {
+      window.formatFileSize = function(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -1527,7 +1527,7 @@ export default {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
       }
       
-      function clearUploadForm() {
+      window.clearUploadForm = function() {
         const form = document.getElementById('pdfUploadForm');
         const filePreview = document.getElementById('pdfFilePreview');
         const uploadBtn = document.getElementById('pdfUploadBtn');
@@ -1544,7 +1544,7 @@ export default {
         hideAgentStatus();
       }
       
-      async function handlePdfUpload(event) {
+      window.handlePdfUpload = async function(event) {
         event.preventDefault();
         
         if (!currentPdfFile) {
@@ -1602,8 +1602,8 @@ export default {
             
             // Clear form and refresh library
             setTimeout(() => {
-              clearUploadForm();
-              refreshPdfs();
+              window.clearUploadForm();
+              window.refreshPdfs();
             }, 2000);
             
           } else {
@@ -1628,7 +1628,7 @@ export default {
       }
       
       // PDF library action functions
-      function downloadPDF(pdfId, filename) {
+      window.downloadPDF = function(pdfId, filename) {
         const url = './pdf/' + pdfId;
         const link = document.createElement('a');
         link.href = url;
@@ -1636,7 +1636,7 @@ export default {
         link.click();
       }
       
-      async function viewPDFInfo(pdfId) {
+      window.viewPDFInfo = async function(pdfId) {
         try {
           showAgentStatus('Loading PDF information...', 'info');
           
@@ -1651,7 +1651,7 @@ export default {
           }
           
           const pdfData = await response.json();
-          showPDFInfoModal(pdfData);
+          window.showPDFInfoModal(pdfData);
           hideAgentStatus();
           
         } catch (error) {
@@ -1659,7 +1659,7 @@ export default {
         }
       }
       
-      async function deletePDF(pdfId, pdfName) {
+      window.deletePDF = async function(pdfId, pdfName) {
         if (!confirm('Are you sure you want to delete "' + pdfName + '"? This action cannot be undone.')) {
           return;
         }
@@ -1678,7 +1678,7 @@ export default {
             showAgentStatus('PDF deleted successfully', 'success');
             setTimeout(() => {
               hideAgentStatus();
-              refreshPdfs();
+              window.refreshPdfs();
             }, 1500);
           } else {
             const result = await response.json();
@@ -1690,7 +1690,7 @@ export default {
         }
       }
       
-      function showPDFInfoModal(pdfData) {
+      window.showPDFInfoModal = function(pdfData) {
         // Create modal HTML
         const modalHtml = \`
           <div class="pdf-modal-overlay" onclick="closePDFInfoModal()">
@@ -1727,7 +1727,7 @@ export default {
         document.body.appendChild(modalContainer);
       }
       
-      function closePDFInfoModal() {
+      window.closePDFInfoModal = function() {
         const modal = document.querySelector('.pdf-modal-overlay');
         if (modal) {
           modal.remove();
