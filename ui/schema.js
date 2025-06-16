@@ -7,6 +7,8 @@ export default {
       "type": "form",
       "title": "🔐 Authentication",
       "description": "Required to access PDF storage and management features",
+      "endpoint": "/validate-key",
+      "method": "POST",
       "fields": [
         {
           "id": "pdfApiKey",
