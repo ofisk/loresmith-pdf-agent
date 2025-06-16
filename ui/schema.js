@@ -26,8 +26,7 @@ export default {
           "type": "submit",
           "label": "Connect",
           "endpoint": "/pdfs",
-          "method": "GET",
-          "success_action": "show_main_content"
+          "method": "GET"
         }
       ]
     },
