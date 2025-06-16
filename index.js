@@ -1368,27 +1368,27 @@ export default {
         pdfApiKey = apiKeyInput.value.trim();
         
         if (!pdfApiKey) {
-          showAgentStatus('Please enter your API key', 'error');
+          window.showAgentStatus('Please enter your API key', 'error');
           return;
         }
         
         localStorage.setItem('loresmith_pdf_api_key', pdfApiKey);
         
         try {
-          showAgentStatus('Validating API key...', 'info');
+          window.showAgentStatus('Validating API key...', 'info');
           const response = await fetch('./pdfs', {
             headers: { 'Authorization': 'Bearer ' + pdfApiKey }
           });
           
           if (response.ok) {
-            hideAgentStatus();
+            window.hideAgentStatus();
             window.showMainContent();
             setTimeout(window.refreshPdfs, 100);
           } else {
-            showAgentStatus('Invalid API key. Please check and try again.', 'error');
+            window.showAgentStatus('Invalid API key. Please check and try again.', 'error');
           }
         } catch (error) {
-          showAgentStatus('Error validating API key: ' + error.message, 'error');
+          window.showAgentStatus('Error validating API key: ' + error.message, 'error');
         }
       }
       
@@ -1444,7 +1444,7 @@ export default {
                 html += '<div class="pdf-item">';
                 html += '<h4>' + (pdf.name || pdf.filename) + '</h4>';
                 html += '<div class="pdf-meta">';
-                html += 'Size: ' + formatFileSize(pdf.size) + ' | ';
+                html += 'Size: ' + window.formatFileSize(pdf.size) + ' | ';
                 html += 'Uploaded: ' + new Date(pdf.uploaded_at).toLocaleDateString() + ' | ';
                 html += (pdf.tags ? 'Tags: ' + pdf.tags : 'No tags');
                 html += '</div>';
@@ -1482,13 +1482,13 @@ export default {
         }
         
         if (file.type !== 'application/pdf') {
-          showAgentStatus('Please select a PDF file', 'error');
+          window.showAgentStatus('Please select a PDF file', 'error');
           fileInput.value = '';
           return;
         }
         
         if (file.size > 200 * 1024 * 1024) {
-          showAgentStatus('File size exceeds 200MB limit', 'error');
+          window.showAgentStatus('File size exceeds 200MB limit', 'error');
           fileInput.value = '';
           return;
         }
@@ -1497,14 +1497,12 @@ export default {
         
         // Show file details
         if (fileDetails) {
-          fileDetails.innerHTML = \`
-            <div class="file-info">
-              <div><strong>Name:</strong> \${file.name}</div>
-              <div><strong>Size:</strong> \${formatFileSize(file.size)}</div>
-              <div><strong>Type:</strong> \${file.type}</div>
-              <div><strong>Modified:</strong> \${new Date(file.lastModified).toLocaleDateString()}</div>
-            </div>
-          \`;
+          fileDetails.innerHTML = '<div class="file-info">' +
+            '<div><strong>Name:</strong> ' + file.name + '</div>' +
+            '<div><strong>Size:</strong> ' + window.formatFileSize(file.size) + '</div>' +
+            '<div><strong>Type:</strong> ' + file.type + '</div>' +
+            '<div><strong>Modified:</strong> ' + new Date(file.lastModified).toLocaleDateString() + '</div>' +
+            '</div>';
         }
         
         // Auto-populate name field with filename (without extension)
@@ -1516,7 +1514,7 @@ export default {
         if (filePreview) filePreview.style.display = 'block';
         if (uploadBtn) uploadBtn.disabled = false;
         
-        hideAgentStatus();
+        window.hideAgentStatus();
       }
       
       window.formatFileSize = function(bytes) {
@@ -1541,19 +1539,19 @@ export default {
         if (uploadStatus) uploadStatus.innerHTML = '';
         
         currentPdfFile = null;
-        hideAgentStatus();
+        window.hideAgentStatus();
       }
       
       window.handlePdfUpload = async function(event) {
         event.preventDefault();
         
         if (!currentPdfFile) {
-          showAgentStatus('Please select a file first', 'error');
+          window.showAgentStatus('Please select a file first', 'error');
           return;
         }
         
         if (!pdfApiKey) {
-          showAgentStatus('API key required', 'error');
+          window.showAgentStatus('API key required', 'error');
           return;
         }
         
@@ -1614,7 +1612,7 @@ export default {
           if (uploadStatus) {
             uploadStatus.innerHTML = '<div style="color: #dc3545;">❌ Upload failed: ' + error.message + '</div>';
           }
-          showAgentStatus('Upload failed: ' + error.message, 'error');
+          window.showAgentStatus('Upload failed: ' + error.message, 'error');
         } finally {
           // Reset upload button
           if (uploadBtn) uploadBtn.disabled = false;
@@ -1638,7 +1636,7 @@ export default {
       
       window.viewPDFInfo = async function(pdfId) {
         try {
-          showAgentStatus('Loading PDF information...', 'info');
+          window.showAgentStatus('Loading PDF information...', 'info');
           
           const response = await fetch('./pdf/' + pdfId + '/metadata', {
             headers: {
@@ -1652,10 +1650,10 @@ export default {
           
           const pdfData = await response.json();
           window.showPDFInfoModal(pdfData);
-          hideAgentStatus();
+          window.hideAgentStatus();
           
         } catch (error) {
-          showAgentStatus('Error loading PDF info: ' + error.message, 'error');
+          window.showAgentStatus('Error loading PDF info: ' + error.message, 'error');
         }
       }
       
@@ -1665,7 +1663,7 @@ export default {
         }
         
         try {
-          showAgentStatus('Deleting PDF...', 'info');
+          window.showAgentStatus('Deleting PDF...', 'info');
           
           const response = await fetch('./pdf/' + pdfId, {
             method: 'DELETE',
@@ -1675,9 +1673,9 @@ export default {
           });
           
           if (response.ok) {
-            showAgentStatus('PDF deleted successfully', 'success');
+            window.showAgentStatus('PDF deleted successfully', 'success');
             setTimeout(() => {
-              hideAgentStatus();
+              window.hideAgentStatus();
               window.refreshPdfs();
             }, 1500);
           } else {
@@ -1686,40 +1684,37 @@ export default {
           }
           
         } catch (error) {
-          showAgentStatus('Error deleting PDF: ' + error.message, 'error');
+          window.showAgentStatus('Error deleting PDF: ' + error.message, 'error');
         }
       }
       
       window.showPDFInfoModal = function(pdfData) {
         // Create modal HTML
-        const modalHtml = \`
-          <div class="pdf-modal-overlay" onclick="closePDFInfoModal()">
-            <div class="pdf-modal" onclick="event.stopPropagation()">
-              <div class="pdf-modal-header">
-                <h3>📄 \${pdfData.name || pdfData.filename}</h3>
-                <button class="close-modal" onclick="closePDFInfoModal()">×</button>
-              </div>
-              <div class="pdf-modal-content">
-                <div class="pdf-info-grid">
-                  <div><strong>Filename:</strong> \${pdfData.filename}</div>
-                  <div><strong>Size:</strong> \${formatFileSize(pdfData.size)}</div>
-                  <div><strong>Uploaded:</strong> \${new Date(pdfData.uploaded_at).toLocaleString()}</div>
-                  <div><strong>Tags:</strong> \${pdfData.tags || 'None'}</div>
-                </div>
-                \${pdfData.text_preview ? \`
-                  <div class="pdf-text-preview">
-                    <h4>Text Preview:</h4>
-                    <div class="text-preview-content">\${pdfData.text_preview}</div>
-                  </div>
-                \` : ''}
-              </div>
-              <div class="pdf-modal-actions">
-                <button class="btn" onclick="downloadPDF('\${pdfData.id}', '\${pdfData.filename}')">Download</button>
-                <button class="btn btn-secondary" onclick="closePDFInfoModal()">Close</button>
-              </div>
-            </div>
-          </div>
-        \`;
+        const modalHtml = '<div class="pdf-modal-overlay" onclick="window.closePDFInfoModal()">' +
+          '<div class="pdf-modal" onclick="event.stopPropagation()">' +
+            '<div class="pdf-modal-header">' +
+              '<h3>📄 ' + (pdfData.name || pdfData.filename) + '</h3>' +
+              '<button class="close-modal" onclick="window.closePDFInfoModal()">×</button>' +
+            '</div>' +
+            '<div class="pdf-modal-content">' +
+              '<div class="pdf-info-grid">' +
+                '<div><strong>Filename:</strong> ' + pdfData.filename + '</div>' +
+                '<div><strong>Size:</strong> ' + window.formatFileSize(pdfData.size) + '</div>' +
+                '<div><strong>Uploaded:</strong> ' + new Date(pdfData.uploaded_at).toLocaleString() + '</div>' +
+                '<div><strong>Tags:</strong> ' + (pdfData.tags || 'None') + '</div>' +
+              '</div>' +
+              (pdfData.text_preview ? 
+                '<div class="pdf-text-preview">' +
+                  '<h4>Text Preview:</h4>' +
+                  '<div class="text-preview-content">' + pdfData.text_preview + '</div>' +
+                '</div>' : '') +
+            '</div>' +
+            '<div class="pdf-modal-actions">' +
+              '<button class="pdf-btn" onclick="window.downloadPDF(\'' + pdfData.id + '\', \'' + pdfData.filename + '\')">Download</button>' +
+              '<button class="pdf-btn pdf-btn-secondary" onclick="window.closePDFInfoModal()">Close</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
         
         // Add modal to page
         const modalContainer = document.createElement('div');
@@ -1735,7 +1730,7 @@ export default {
       }
       
       // Status message functions
-      function showAgentStatus(message, type = 'info') {
+      window.showAgentStatus = function(message, type = 'info') {
         const statusElement = document.getElementById('pdfStatus');
         if (!statusElement) return;
         
@@ -1746,12 +1741,12 @@ export default {
         // Auto-hide success messages after 3 seconds
         if (type === 'success') {
           setTimeout(() => {
-            hideAgentStatus();
+            window.hideAgentStatus();
           }, 3000);
         }
       }
       
-      function hideAgentStatus() {
+      window.hideAgentStatus = function() {
         const statusElement = document.getElementById('pdfStatus');
         if (statusElement) {
           statusElement.style.display = 'none';
