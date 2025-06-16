@@ -91,7 +91,7 @@ export default {
   async handleAuthScript() {
     try {
       // Serve the auth handler JavaScript directly
-      const authScript = `
+      const authScript = `wy
 // PDF Agent Authentication Handler
 class PdfAgentAuth {
   constructor() {
@@ -295,12 +295,15 @@ class PdfAgentAuth {
   }
   
   updateUIState() {
-    // Show/hide components based on authentication state
-    document.querySelectorAll('[data-show-when="authenticated"]').forEach(el => {
+    const container = document.querySelector('.schema-ui-container');
+    if (!container) return;
+    
+    // Only affect elements within the agent's container
+    container.querySelectorAll('[data-show-when="authenticated"]').forEach(el => {
       el.style.display = this.authenticated ? 'block' : 'none';
     });
     
-    document.querySelectorAll('[data-show-when="not_authenticated"]').forEach(el => {
+    container.querySelectorAll('[data-show-when="not_authenticated"]').forEach(el => {
       el.style.display = this.authenticated ? 'none' : 'block';
     });
   }
