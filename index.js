@@ -1294,13 +1294,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!authResult.success) {
       const errorMessage = adminRequired 
         ? "Delete operations require admin authentication"
-        : "Please provide a valid API key in the Authorization header";
+        : "I need your API key to access your PDF library. Please provide your authentication credentials.";
+      
+      const authPrompt = adminRequired
+        ? "This operation requires admin privileges. Please provide your admin API key."
+        : "To access your PDF library, I need your API key. You can find this in your account settings.";
         
       return {
         error: new Response(JSON.stringify({
           error: "Authentication required",
           message: errorMessage,
-          format: "Authorization: Bearer your-api-key"
+          authPrompt: authPrompt,
+          authFields: [
+            {
+              id: 'apiKey',
+              type: 'password',
+              label: adminRequired ? 'Admin API Key' : 'API Key',
+              placeholder: 'Enter your API key',
+              required: true,
+              description: adminRequired 
+                ? 'Admin key required for delete operations'
+                : 'Your personal API key for PDF access'
+            }
+          ],
+          conversational: true,
+          agent: "pdf-agent"
         }), { 
           status: 401,
           headers: { 
