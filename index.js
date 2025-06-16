@@ -9,7 +9,7 @@ export default {
 
     // Serve the complete UI for both root path and /ui endpoint
     if (pathname === "/" || pathname === "/ui") {
-      return new Response(this.getUploadUI(), {
+      return new Response(this.getCompleteUIContent(), {
         headers: { 
           "Content-Type": "text/html",
           "Access-Control-Allow-Origin": "*"
