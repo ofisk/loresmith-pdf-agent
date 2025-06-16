@@ -1,5 +1,3 @@
-import { UPLOAD_UI_HTML } from './pdf-agent-ui.js';
-
 export default {
   async fetch(req, env) {
     const { pathname } = new URL(req.url);
@@ -918,15 +916,23 @@ export default {
 
   // Load and serve the upload UI HTML from template
   getUploadUI() {
-    return UPLOAD_UI_HTML;
+    // Return the same complete UI as handleCompleteUI but as a full HTML page
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 PDF Library Manager</title>
+</head>
+<body>
+    ${this.getCompleteUIContent()}
+</body>
+</html>`;
   },
 
-  // Handle UI chunk requests for main agent integration
-  async handleCompleteUI(req) {
-    const step = new URL(req.url).searchParams.get('step') || '1';
-    
-    // Return complete HTML interface for PDF management
-    const completeUI = `
+  // Get the complete UI content (shared between handleCompleteUI and getUploadUI)
+  getCompleteUIContent() {
+    return `
       <div class="pdf-agent-ui">
         <style>
           .pdf-agent-ui {
@@ -1344,6 +1350,14 @@ export default {
         ${this.getPdfAgentScripts()}
       </script>
     `;
+  },
+
+  // Handle UI chunk requests for main agent integration
+  async handleCompleteUI(req) {
+    const step = new URL(req.url).searchParams.get('step') || '1';
+    
+    // Return complete HTML interface for PDF management using shared content
+    const completeUI = this.getCompleteUIContent();
 
     return new Response(completeUI, {
       headers: {
