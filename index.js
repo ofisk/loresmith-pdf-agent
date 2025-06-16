@@ -7,7 +7,7 @@ export default {
       return this.handleAgentCard();
     }
 
-    // Serve the upload UI for root path
+    // Serve the complete UI for both root path and /ui endpoint
     if (pathname === "/" || pathname === "/ui") {
       return new Response(this.getUploadUI(), {
         headers: { 
@@ -15,16 +15,6 @@ export default {
           "Access-Control-Allow-Origin": "*"
         }
       });
-    }
-
-    // Serve UI chunks for main agent integration
-    if (pathname === "/ui-chunk" && req.method === "GET") {
-      return this.handleUIChunk(req);
-    }
-
-    // Serve complete UI for main agent integration
-    if (pathname === "/ui" && req.method === "GET") {
-      return this.handleCompleteUI(req);
     }
 
     // Handle CORS preflight requests
@@ -1352,119 +1342,7 @@ export default {
     `;
   },
 
-  // Handle UI chunk requests for main agent integration
-  async handleCompleteUI(req) {
-    const step = new URL(req.url).searchParams.get('step') || '1';
-    
-    // Return complete HTML interface for PDF management using shared content
-    const completeUI = this.getCompleteUIContent();
-
-    return new Response(completeUI, {
-      headers: {
-        'Content-Type': 'text/html',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
-  },
-
-  async handleUIChunk(req) {
-    const url = new URL(req.url);
-    const step = url.searchParams.get('step') || '1';
-    
-    // Return a comprehensive PDF management interface
-    const uiChunk = {
-      success: true,
-      title: '📚 PDF Library Manager',
-      html: `
-        <div class="agent-ui-chunk">
-          <div class="prompt">
-            <h3>📚 PDF Library Manager</h3>
-            <p>Manage your PDF collection with secure upload and organization features.</p>
-          </div>
-          
-          <!-- API Key Section -->
-          <div class="section" id="apiKeySection">
-            <h4>🔐 Authentication</h4>
-            <div class="input-group">
-              <label for="pdfApiKey">API Key</label>
-              <input type="password" id="pdfApiKey" placeholder="Enter your API key">
-              <button class="btn btn-sm" onclick="validatePdfApiKey()">Connect</button>
-            </div>
-          </div>
-          
-          <!-- Main Content (hidden until authenticated) -->
-          <div id="mainContent" style="display: none;">
-            
-            <!-- Library Section -->
-            <div class="section">
-              <h4>📚 Your PDF Library</h4>
-              <div id="pdfsContainer" class="pdfs-container">Loading...</div>
-              <div class="library-actions">
-                <button class="btn btn-secondary btn-sm" onclick="refreshPdfs()">Refresh</button>
-                <button class="btn btn-secondary btn-sm" onclick="showApiKeySection()">Change API Key</button>
-              </div>
-            </div>
-            
-            <!-- Upload Section -->
-            <div class="section">
-              <h4>📤 Upload New PDF</h4>
-              <form id="pdfUploadForm" onsubmit="handlePdfUpload(event)">
-                <div class="input-group">
-                  <label for="pdfFileInput">Select PDF File</label>
-                  <input type="file" id="pdfFileInput" accept=".pdf" required onchange="handleFileSelection()">
-                  <small>Supports PDF files up to 200MB</small>
-                </div>
-                
-                <div id="filePreview" class="file-preview" style="display: none;">
-                  <h5>📄 Selected File</h5>
-                  <div id="fileDetails" class="file-details"></div>
-                </div>
-                
-                <div class="input-group">
-                  <label for="pdfName">Display Name (optional)</label>
-                  <input type="text" id="pdfName" placeholder="Custom name for your PDF">
-                  <small>Leave blank to use the original filename</small>
-                </div>
-                
-                <div class="input-group">
-                  <label for="pdfTags">Tags (optional)</label>
-                  <input type="text" id="pdfTags" placeholder="e.g., campaign, rules, homebrew">
-                  <small>Comma-separated tags to help organize your PDFs</small>
-                </div>
-                
-                <div class="upload-actions">
-                  <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
-                    <span id="uploadBtnText">Upload PDF</span>
-                  </button>
-                  <button type="button" class="btn btn-secondary" onclick="clearUploadForm()">Clear</button>
-                </div>
-                
-                <div class="progress-container" id="uploadProgress" style="display: none;">
-                  <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                  </div>
-                  <div class="progress-text" id="progressText">Preparing upload...</div>
-                </div>
-                
-                <div id="uploadStatus" class="status-message"></div>
-              </form>
-            </div>
-            
-          </div>
-        </div>
-      `,
-      scripts: this.getPdfAgentScripts()
-    };
-
-    return new Response(JSON.stringify(uiChunk), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
-  },
-
-  // Get PDF agent JavaScript functions for UI chunks
+  // Get PDF agent JavaScript functions
   getPdfAgentScripts() {
     return `
       let currentPdfFile = null;
@@ -1515,16 +1393,16 @@ export default {
       }
       
       function showMainContent() {
-        const apiKeySection = document.getElementById('apiKeySection');
-        const mainContent = document.getElementById('mainContent');
+        const apiKeySection = document.getElementById('pdfApiKeySection');
+        const mainContent = document.getElementById('pdfMainContent');
         
         if (apiKeySection) apiKeySection.style.display = 'none';
         if (mainContent) mainContent.style.display = 'block';
       }
       
       function showApiKeySection() {
-        const apiKeySection = document.getElementById('apiKeySection');
-        const mainContent = document.getElementById('mainContent');
+        const apiKeySection = document.getElementById('pdfApiKeySection');
+        const mainContent = document.getElementById('pdfMainContent');
         
         if (apiKeySection) apiKeySection.style.display = 'block';
         if (mainContent) mainContent.style.display = 'none';
@@ -1537,7 +1415,7 @@ export default {
       }
       
       async function refreshPdfs() {
-        const container = document.getElementById('pdfsContainer');
+        const container = document.getElementById('pdfContainer');
         if (!container) return;
         
         container.innerHTML = 'Loading...';
@@ -1591,9 +1469,9 @@ export default {
       function handleFileSelection() {
         const fileInput = document.getElementById('pdfFileInput');
         const file = fileInput.files[0];
-        const filePreview = document.getElementById('filePreview');
-        const fileDetails = document.getElementById('fileDetails');
-        const uploadBtn = document.getElementById('uploadBtn');
+        const filePreview = document.getElementById('pdfFilePreview');
+        const fileDetails = document.getElementById('pdfFileDetails');
+        const uploadBtn = document.getElementById('pdfUploadBtn');
         const pdfNameInput = document.getElementById('pdfName');
         
         if (!file) {
@@ -1651,10 +1529,10 @@ export default {
       
       function clearUploadForm() {
         const form = document.getElementById('pdfUploadForm');
-        const filePreview = document.getElementById('filePreview');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const uploadProgress = document.getElementById('uploadProgress');
-        const uploadStatus = document.getElementById('uploadStatus');
+        const filePreview = document.getElementById('pdfFilePreview');
+        const uploadBtn = document.getElementById('pdfUploadBtn');
+        const uploadProgress = document.getElementById('pdfUploadProgress');
+        const uploadStatus = document.getElementById('pdfUploadStatus');
         
         if (form) form.reset();
         if (filePreview) filePreview.style.display = 'none';
@@ -1682,12 +1560,12 @@ export default {
         const formData = new FormData();
         const nameInput = document.getElementById('pdfName');
         const tagsInput = document.getElementById('pdfTags');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const uploadBtnText = document.getElementById('uploadBtnText');
-        const uploadProgress = document.getElementById('uploadProgress');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadBtn = document.getElementById('pdfUploadBtn');
+        const uploadBtnText = document.getElementById('pdfUploadBtnText');
+        const uploadProgress = document.getElementById('pdfUploadProgress');
+        const progressFill = document.getElementById('pdfProgressFill');
+        const progressText = document.getElementById('pdfProgressText');
+        const uploadStatus = document.getElementById('pdfUploadStatus');
         
         // Prepare form data
         formData.append('file', currentPdfFile);
@@ -1789,7 +1667,7 @@ export default {
         try {
           showAgentStatus('Deleting PDF...', 'info');
           
-          const response = await fetch('/proxy/pdf-agent/pdf/' + pdfId, {
+          const response = await fetch('./pdf/' + pdfId, {
             method: 'DELETE',
             headers: {
               'Authorization': 'Bearer ' + pdfApiKey
@@ -1853,6 +1731,31 @@ export default {
         const modal = document.querySelector('.pdf-modal-overlay');
         if (modal) {
           modal.remove();
+        }
+      }
+      
+      // Status message functions
+      function showAgentStatus(message, type = 'info') {
+        const statusElement = document.getElementById('pdfStatus');
+        if (!statusElement) return;
+        
+        statusElement.className = 'pdf-status ' + type;
+        statusElement.textContent = message;
+        statusElement.style.display = 'block';
+        
+        // Auto-hide success messages after 3 seconds
+        if (type === 'success') {
+          setTimeout(() => {
+            hideAgentStatus();
+          }, 3000);
+        }
+      }
+      
+      function hideAgentStatus() {
+        const statusElement = document.getElementById('pdfStatus');
+        if (statusElement) {
+          statusElement.style.display = 'none';
+          statusElement.textContent = '';
         }
       }
     `;
