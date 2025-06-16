@@ -1270,7 +1270,7 @@ export default {
             <input type="password" id="pdfApiKey" placeholder="Enter your API key">
             <small>Required to access PDF storage and management features</small>
           </div>
-          <button class="pdf-btn" onclick="validatePdfApiKey()">Connect</button>
+          <button class="pdf-btn" onclick="window.validatePdfApiKey()">Connect</button>
         </div>
         
         <!-- Main Content (hidden until authenticated) -->
