@@ -91,7 +91,7 @@ export default {
   async handleAuthScript() {
     try {
       // Serve the auth handler JavaScript directly
-      const authScript = `wy
+      const authScript = `
 // PDF Agent Authentication Handler
 class PdfAgentAuth {
   constructor() {
