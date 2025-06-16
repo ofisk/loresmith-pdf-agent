@@ -1280,8 +1280,8 @@ export default {
           <div class="pdf-section">
             <h3>📚 Your PDF Library</h3>
             <div class="pdf-library-actions">
-              <button class="pdf-btn pdf-btn-secondary pdf-btn-sm" onclick="refreshPdfs()">Refresh</button>
-              <button class="pdf-btn pdf-btn-secondary pdf-btn-sm" onclick="showApiKeySection()">Change API Key</button>
+              <button class="pdf-btn pdf-btn-secondary pdf-btn-sm" onclick="window.refreshPdfs()">Refresh</button>
+              <button class="pdf-btn pdf-btn-secondary pdf-btn-sm" onclick="window.showApiKeySection()">Change API Key</button>
             </div>
             <div id="pdfContainer" class="pdf-container">Loading...</div>
           </div>
@@ -1289,7 +1289,7 @@ export default {
           <!-- Upload Section -->
           <div class="pdf-section">
             <h3>📤 Upload New PDF</h3>
-            <form id="pdfUploadForm" onsubmit="handlePdfUpload(event)">
+            <form id="pdfUploadForm" onsubmit="window.handlePdfUpload(event)">
               <div class="pdf-input-group">
                 <label for="pdfFileInput">Select PDF File</label>
                 <input type="file" id="pdfFileInput" accept=".pdf" required onchange="handleFileSelection()">
@@ -1317,7 +1317,7 @@ export default {
                 <button type="submit" class="pdf-btn pdf-btn-success" id="pdfUploadBtn" disabled>
                   <span id="pdfUploadBtnText">Upload PDF</span>
                 </button>
-                <button type="button" class="pdf-btn pdf-btn-secondary" onclick="clearUploadForm()">Clear</button>
+                <button type="button" class="pdf-btn pdf-btn-secondary" onclick="window.clearUploadForm()">Clear</button>
               </div>
               
               <div class="pdf-progress-container" id="pdfUploadProgress">
@@ -1449,9 +1449,9 @@ export default {
                 html += (pdf.tags ? 'Tags: ' + pdf.tags : 'No tags');
                 html += '</div>';
                 html += '<div class="pdf-actions">';
-                html += '<button class="btn btn-sm" onclick="downloadPDF(\\'' + pdf.id + '\\', \\'' + pdf.filename + '\\')">Download</button>';
-                html += '<button class="btn btn-sm btn-secondary" onclick="viewPDFInfo(\\'' + pdf.id + '\\')">Info</button>';
-                html += '<button class="btn btn-sm btn-danger" onclick="deletePDF(\\'' + pdf.id + '\\', \\'' + (pdf.name || pdf.filename) + '\\')">Delete</button>';
+                html += '<button class="pdf-btn pdf-btn-sm" onclick="window.downloadPDF(\\'' + pdf.id + '\\', \\'' + pdf.filename + '\\')">Download</button>';
+                html += '<button class="pdf-btn pdf-btn-sm pdf-btn-secondary" onclick="window.viewPDFInfo(\\'' + pdf.id + '\\')">Info</button>';
+                html += '<button class="pdf-btn pdf-btn-sm pdf-btn-danger" onclick="window.deletePDF(\\'' + pdf.id + '\\', \\'' + (pdf.name || pdf.filename) + '\\')">Delete</button>';
                 html += '</div>';
                 html += '</div>';
               });
