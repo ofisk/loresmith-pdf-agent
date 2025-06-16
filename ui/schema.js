@@ -25,8 +25,8 @@ export default {
           "id": "validateApiKey",
           "type": "submit",
           "label": "Connect",
-          "endpoint": "/pdfs",
-          "method": "GET"
+          "endpoint": "/validate-key",
+          "method": "POST"
         }
       ]
     },
