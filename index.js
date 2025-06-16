@@ -12,6 +12,11 @@ export default {
       return this.handleUISchema();
     }
 
+    // Handler for auth JavaScript
+    if (pathname === "/ui/auth.js" && req.method === "GET") {
+      return this.handleAuthScript();
+    }
+
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
       return this.handleCorsOptions();
@@ -82,6 +87,412 @@ export default {
     }
   },
 
+  // Handler for auth script
+  async handleAuthScript() {
+    try {
+      // Serve the auth handler JavaScript directly
+      const authScript = `
+// PDF Agent Authentication Handler
+class PdfAgentAuth {
+  constructor() {
+    this.apiKey = null;
+    this.authenticated = false;
+    this.storageKey = 'loresmith_pdf_api_key';
+    this.baseUrl = window.location.origin;  // Use current origin as base URL
+    
+    this.init();
+  }
+  
+  init() {
+    // Load saved API key if available
+    const savedKey = localStorage.getItem(this.storageKey);
+    if (savedKey) {
+      this.apiKey = savedKey;
+      this.validateApiKey().then(isValid => {
+        if (isValid) {
+          this.authenticated = true;
+          this.updateUIState();
+          this.loadInitialData();
+        }
+      });
+    }
+    
+    this.bindEvents();
+    this.updateUIState();
+  }
+  
+  bindEvents() {
+    // Handle authentication form submission
+    document.addEventListener('submit', (e) => {
+      if (e.target.id === 'authentication-form') {
+        e.preventDefault();
+        this.handleAuthentication(e.target);
+      }
+    });
+    
+    // Handle other form submissions
+    document.addEventListener('submit', (e) => {
+      if (e.target.id !== 'authentication-form') {
+        e.preventDefault();
+        this.handleFormSubmit(e.target);
+      }
+    });
+    
+    // Handle button clicks
+    document.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (action) {
+        e.preventDefault();
+        this.handleButtonAction(e.target, action);
+      }
+    });
+  }
+  
+  async handleAuthentication(form) {
+    const apiKeyField = form.querySelector('input[name="pdfApiKey"]');
+    const apiKey = apiKeyField?.value?.trim();
+    
+    if (!apiKey) {
+      this.showMessage('error', 'Please enter an API key');
+      return;
+    }
+    
+    this.setLoading(form, true);
+    
+    try {
+      // Test the API key by trying to fetch PDFs
+      const response = await fetch(this.baseUrl + '/pdfs', {
+        headers: { 'Authorization': 'Bearer ' + apiKey }
+      });
+      
+      if (response.ok) {
+        this.apiKey = apiKey;
+        localStorage.setItem(this.storageKey, apiKey);
+        this.authenticated = true;
+        this.updateUIState();
+        this.showMessage('success', 'Successfully connected! Your API key has been securely stored.');
+        
+        // Load initial data
+        setTimeout(() => {
+          this.loadInitialData();
+        }, 500);
+      } else {
+        throw new Error('Invalid API key or authentication failed');
+      }
+    } catch (error) {
+      this.showMessage('error', error.message);
+    } finally {
+      this.setLoading(form, false);
+    }
+  }
+  
+  async handleFormSubmit(form) {
+    if (!this.authenticated) {
+      this.showMessage('error', 'Please authenticate first');
+      return;
+    }
+    
+    const endpoint = form.dataset.endpoint;
+    const method = form.dataset.method || 'POST';
+    
+    this.setLoading(form, true);
+    
+    try {
+      const formData = new FormData(form);
+      const headers = {
+        'Authorization': 'Bearer ' + this.apiKey
+      };
+      
+      let body;
+      if (form.dataset.encoding === 'multipart/form-data') {
+        body = formData;
+      } else {
+        body = JSON.stringify(Object.fromEntries(formData));
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      const response = await fetch(this.baseUrl + endpoint, {
+        method,
+        headers,
+        body
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        this.showMessage('success', 'Operation completed successfully');
+        
+        // Refresh data if needed
+        if (form.dataset.successAction === 'refresh_library') {
+          this.loadPdfLibrary();
+        }
+        
+        // Clear form if configured
+        if (form.querySelector('input[type="file"]')) {
+          form.reset();
+        }
+      } else {
+        throw new Error('Request failed: ' + response.status);
+      }
+    } catch (error) {
+      this.showMessage('error', error.message);
+    } finally {
+      this.setLoading(form, false);
+    }
+  }
+  
+  async handleButtonAction(button, action) {
+    switch (action) {
+      case 'refresh_data':
+        await this.loadPdfLibrary();
+        break;
+      case 'show_authentication':
+        this.showAuthenticationForm();
+        break;
+      case 'download_file':
+        await this.downloadFile(button.dataset.id);
+        break;
+      case 'delete_item':
+        await this.deleteFile(button.dataset.id, button.dataset.name);
+        break;
+      case 'reset_form':
+        this.resetForm(button);
+        break;
+      case 'show_modal':
+        await this.showModal(button.dataset.id);
+        break;
+      case 'close_modal':
+        this.closeModal();
+        break;
+    }
+  }
+  
+  showAuthenticationForm() {
+    this.authenticated = false;
+    this.apiKey = null;
+    localStorage.removeItem(this.storageKey);
+    this.updateUIState();
+    
+    const authForm = document.querySelector('#authentication-form');
+    if (authForm) {
+      authForm.reset();
+    }
+    
+    this.showMessage('info', 'Please enter your API key to reconnect.');
+  }
+  
+  async validateApiKey() {
+    if (!this.apiKey) return false;
+    
+    try {
+      const response = await fetch(this.baseUrl + '/pdfs', {
+        headers: { 'Authorization': 'Bearer ' + this.apiKey }
+      });
+      return response.ok;
+    } catch (error) {
+      console.warn('API key validation failed:', error);
+      return false;
+    }
+  }
+  
+  updateUIState() {
+    // Show/hide components based on authentication state
+    document.querySelectorAll('[data-show-when="authenticated"]').forEach(el => {
+      el.style.display = this.authenticated ? 'block' : 'none';
+    });
+    
+    document.querySelectorAll('[data-show-when="not_authenticated"]').forEach(el => {
+      el.style.display = this.authenticated ? 'none' : 'block';
+    });
+  }
+  
+  async loadInitialData() {
+    await this.loadPdfLibrary();
+  }
+  
+  async loadPdfLibrary() {
+    if (!this.authenticated) return;
+    
+    const libraryElement = document.querySelector('[data-component="pdf_library"]');
+    if (!libraryElement) return;
+    
+    this.setLoading(libraryElement, true);
+    
+    try {
+      const response = await fetch(this.baseUrl + '/pdfs', {
+        headers: { 'Authorization': 'Bearer ' + this.apiKey }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        this.renderPdfLibrary(data);
+      } else {
+        throw new Error('Failed to load PDFs: ' + response.status);
+      }
+    } catch (error) {
+      this.showMessage('error', 'Failed to load PDF library: ' + error.message);
+    } finally {
+      this.setLoading(libraryElement, false);
+    }
+  }
+  
+  renderPdfLibrary(data) {
+    const libraryElement = document.querySelector('[data-component="pdf_library"]');
+    const container = libraryElement?.querySelector('.data-list');
+    if (!container) return;
+    
+    const pdfs = Array.isArray(data) ? data : data.pdfs || [];
+    
+    if (pdfs.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📄</div><p>No PDFs found. Upload your first PDF to get started!</p></div>';
+      return;
+    }
+    
+    container.innerHTML = pdfs.map(pdf => 
+      '<div class="data-list-item">' +
+        '<div class="data-list-item-content">' +
+          '<div class="data-list-item-title">' + (pdf.name || pdf.filename) + '</div>' +
+          '<div class="data-list-item-subtitle">Size: ' + this.formatFileSize(pdf.size) + '</div>' +
+          '<div class="data-list-item-subtitle">Uploaded: ' + new Date(pdf.uploaded_at || pdf.uploadDate).toLocaleDateString() + '</div>' +
+          '<div class="data-list-item-subtitle">Tags: ' + (pdf.tags || 'No tags') + '</div>' +
+        '</div>' +
+        '<div class="data-list-item-actions">' +
+          '<button class="button button-primary button-small" data-action="download_file" data-id="' + pdf.id + '">Download</button>' +
+          '<button class="button button-secondary button-small" data-action="show_modal" data-id="' + pdf.id + '">Info</button>' +
+          '<button class="button button-danger button-small" data-action="delete_item" data-id="' + pdf.id + '" data-name="' + (pdf.name || pdf.filename) + '">Delete</button>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+  }
+  
+  async downloadFile(fileId) {
+    if (!fileId || !this.authenticated) return;
+    
+    try {
+      const response = await fetch(this.baseUrl + '/pdf/' + fileId, {
+        headers: { 'Authorization': 'Bearer ' + this.apiKey }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'pdf-' + fileId + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        this.showMessage('success', 'File downloaded successfully');
+      } else {
+        throw new Error('Download failed');
+      }
+    } catch (error) {
+      this.showMessage('error', 'Failed to download file: ' + error.message);
+    }
+  }
+  
+  async deleteFile(fileId, fileName) {
+    if (!fileId || !this.authenticated) return;
+    
+    if (!confirm('Are you sure you want to delete "' + fileName + '"? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(this.baseUrl + '/pdf/' + fileId, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + this.apiKey }
+      });
+      
+      if (response.ok) {
+        this.showMessage('success', 'File deleted successfully');
+        this.loadPdfLibrary();
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      this.showMessage('error', 'Failed to delete file: ' + error.message);
+    }
+  }
+  
+  resetForm(button) {
+    const form = button.closest('form');
+    if (form) {
+      form.reset();
+      this.showMessage('info', 'Form cleared');
+    }
+  }
+  
+  async showModal(fileId) {
+    console.log('Show modal for file:', fileId);
+  }
+  
+  closeModal() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => modal.classList.remove('show'));
+  }
+  
+  setLoading(element, loading) {
+    if (loading) {
+      element.classList.add('loading');
+    } else {
+      element.classList.remove('loading');
+    }
+  }
+  
+  showMessage(type, message) {
+    const container = document.querySelector('.schema-ui-container') || document.body;
+    const messageEl = document.createElement('div');
+    messageEl.className = 'message ' + type;
+    messageEl.textContent = message;
+    messageEl.style.cssText = 
+      'padding: 12px 16px; border-radius: 6px; margin: 16px 0; font-size: 14px;' +
+      (type === 'success' ? 'background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0;' : '') +
+      (type === 'error' ? 'background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;' : '') +
+      (type === 'info' ? 'background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd;' : '');
+    
+    container.insertBefore(messageEl, container.firstChild);
+    
+    if (type === 'success') {
+      setTimeout(() => messageEl.remove(), 3000);
+    }
+  }
+  
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  window.pdfAgentAuth = new PdfAgentAuth();
+});
+`;
+      
+      return new Response(authScript, {
+        headers: {
+          'Content-Type': 'application/javascript',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=3600'
+        }
+      });
+    } catch (error) {
+      console.error('Failed to serve auth script:', error);
+      return new Response(`console.error('Failed to load PDF agent auth script: ${error.message}');`, {
+        status: 500,
+        headers: { 
+          'Content-Type': 'application/javascript',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+  },
+
   // Handler for /.well-known/agent.json
   async handleAgentCard() {
     return new Response(JSON.stringify({
@@ -89,7 +500,16 @@ export default {
       "name": "LoreSmith PDF Storage Agent",
       "description": "Stores and manages D&D 5e PDFs for campaign planning. Handles large PDF uploads up to 200MB, extracts metadata, and provides retrieval endpoints.",
       "version": "1.0.0",
+      "icon": "📚",
       "ui_schema": "/ui/schema",
+      "example_prompts": [
+        "I want to upload a PDF",
+        "Help me store my D&D books",
+        "I need to manage my campaign PDFs",
+        "Upload my Player's Handbook",
+        "Store my homebrew documents",
+        "I need to manage my campaign resources"
+      ],
       "capabilities": [
         "pdf-upload",
         "pdf-storage", 
