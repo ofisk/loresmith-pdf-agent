@@ -1331,8 +1331,80 @@ export default {
         }
       }
       
-      // Modal and other functions would go here...
-      // (Keeping this brief for now, but would include the full modal implementation)
+      async function deletePDF(pdfId, pdfName) {
+        if (!confirm('Are you sure you want to delete "' + pdfName + '"? This action cannot be undone.')) {
+          return;
+        }
+        
+        try {
+          showAgentStatus('Deleting PDF...', 'info');
+          
+          const response = await fetch('/proxy/pdf-agent/pdf/' + pdfId, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': 'Bearer ' + pdfApiKey
+            }
+          });
+          
+          if (response.ok) {
+            showAgentStatus('PDF deleted successfully', 'success');
+            setTimeout(() => {
+              hideAgentStatus();
+              refreshPdfs();
+            }, 1500);
+          } else {
+            const result = await response.json();
+            throw new Error(result.error || 'Failed to delete PDF');
+          }
+          
+        } catch (error) {
+          showAgentStatus('Error deleting PDF: ' + error.message, 'error');
+        }
+      }
+      
+      function showPDFInfoModal(pdfData) {
+        // Create modal HTML
+        const modalHtml = \`
+          <div class="pdf-modal-overlay" onclick="closePDFInfoModal()">
+            <div class="pdf-modal" onclick="event.stopPropagation()">
+              <div class="pdf-modal-header">
+                <h3>📄 \${pdfData.name || pdfData.filename}</h3>
+                <button class="close-modal" onclick="closePDFInfoModal()">×</button>
+              </div>
+              <div class="pdf-modal-content">
+                <div class="pdf-info-grid">
+                  <div><strong>Filename:</strong> \${pdfData.filename}</div>
+                  <div><strong>Size:</strong> \${formatFileSize(pdfData.size)}</div>
+                  <div><strong>Uploaded:</strong> \${new Date(pdfData.uploaded_at).toLocaleString()}</div>
+                  <div><strong>Tags:</strong> \${pdfData.tags || 'None'}</div>
+                </div>
+                \${pdfData.text_preview ? \`
+                  <div class="pdf-text-preview">
+                    <h4>Text Preview:</h4>
+                    <div class="text-preview-content">\${pdfData.text_preview}</div>
+                  </div>
+                \` : ''}
+              </div>
+              <div class="pdf-modal-actions">
+                <button class="btn" onclick="downloadPDF('\${pdfData.id}', '\${pdfData.filename}')">Download</button>
+                <button class="btn btn-secondary" onclick="closePDFInfoModal()">Close</button>
+              </div>
+            </div>
+          </div>
+        \`;
+        
+        // Add modal to page
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = modalHtml;
+        document.body.appendChild(modalContainer);
+      }
+      
+      function closePDFInfoModal() {
+        const modal = document.querySelector('.pdf-modal-overlay');
+        if (modal) {
+          modal.remove();
+        }
+      }
     `;
   }
 };
